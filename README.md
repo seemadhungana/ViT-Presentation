@@ -9,8 +9,8 @@
 **ArXiv:** https://arxiv.org/abs/2010.11929
 **Code:** https://github.com/google-research/vision_transformer
 
-**Presented by:** [Your Name]
-**Date:** [Presentation Date]
+**Presented by:** Seema Dhungana
+**Date:** October 30, 2025
 
 ---
 
@@ -62,6 +62,9 @@ Meanwhile, **Transformers** revolutionized NLP through pure self-attention, scal
 
 ### How does ViT convert a 2D image into a sequence for Transformers?
 
+<details>
+<summary>Click to reveal answer</summary>
+
 **The transformation process:**
 
 ```
@@ -86,17 +89,22 @@ Classification head (D → K classes)
 
 **Key insight:** An image becomes a "sentence" where each "word" is a 16×16 pixel patch.
 
+</details>
+
 ---
 
 ## Question 2: The Data Scaling Trade-off
 
-### Part A: What happens when training ViT on datasets of different sizes?
+### What happens when training ViT on datasets of different sizes, and why is this important?
 
-**Findings across three scales:**
+<details>
+<summary>Click to reveal answer</summary>
+
+**The critical finding: Scale trumps inductive bias**
 
 **Small data (ImageNet, 1.3M images):**
 - ViT-Large **underperforms** ResNet of comparable size
-- Despite regularization (dropout, weight decay), lacks of inductive bias hurts
+- Despite regularization (dropout, weight decay), lack of inductive bias hurts
 - CNNs' built-in assumptions (locality, translation equivariance) are beneficial
 
 **Medium data (ImageNet-21k, 14M images):**
@@ -111,9 +119,7 @@ Classification head (D → K classes)
 
 **Profound implication:** The inductive biases that help CNNs on small datasets actually **limit** their performance when scaling to massive datasets.
 
-### Part B: Computational Efficiency
-
-**Pre-training cost comparison:**
+**Computational Efficiency Bonus:**
 
 | Model | ImageNet Acc | Pre-training Cost (TPUv3-days) | Efficiency |
 |-------|--------------|-------------------------------|------------|
@@ -123,84 +129,90 @@ Classification head (D → K classes)
 
 **Key result:** ViT-L/16 matches BiT-L performance while using **14.6× less compute** (680 vs 9,900 TPUv3-days).
 
+</details>
+
 ---
 
 ## Formal Architecture: Vision Transformer
 
 Following the formal algorithm style from Phuong & Hutter (2022):
 
-### ViT Innovation Summary
-
-| Component | Source | What's Different? |
-|-----------|--------|-------------------|
-| <mark style="background-color: #FFE082">**Patch Embedding**</mark> | **NEW (ViT)** | Converts 2D images → 1D sequences of patches |
-| <mark style="background-color: #FFE082">**Position Embeddings**</mark> | **NEW (ViT)** | 1D learned (not 2D spatial!) |
-| **[CLS] Token** | BERT | Borrowed directly from NLP |
-| **Multi-Head Attention** | Vaswani et al. (2017) | Identical to original Transformer |
-| **MLP Block** | Vaswani et al. (2017) | Standard feed-forward (GELU from BERT) |
-| **Layer Norm** | Ba et al. (2016) | Pre-norm architecture (standard) |
-
-**Key Insight:** ViT's only innovation is the input preprocessing—everything else is a standard Transformer!
-
 ### Algorithm 1: Vision Transformer Forward Pass
 
-**Input:** <mark style="background-color: #FFE082">Image $\mathbf{x} \in \mathbb{R}^{H \times W \times C}$</mark> ← **NEW:** 2D input (not text tokens)
+**Input:** Image $\mathbf{x} \in \mathbb{R}^{H \times W \times C}$
 **Output:** Class logits $\mathbf{y} \in \mathbb{R}^K$
-**Hyperparameters:** <mark style="background-color: #FFE082">Patch size $P$</mark> ← **NEW**, embedding dimension $D$, number of layers $L$, number of heads $H$
+**Hyperparameters:** Patch size $P$, embedding dimension $D$, number of layers $L$, number of heads $H$
 
 **Parameters $\theta$:**
-- <mark style="background-color: #FFE082">Token embedding: $\mathbf{W}_e \in \mathbb{R}^{D \times (P^2 \cdot C)}$</mark> ← **NEW:** Projects flattened patches
-- <mark style="background-color: #FFE082">Position embedding: $\mathbf{W}_p \in \mathbb{R}^{D \times (N+1)}$</mark> ← **NEW:** 1D learned (not 2D!)
-- [CLS] token: $\mathbf{x}_{\text{class}} \in \mathbb{R}^D$ (from BERT)
-- For each layer $\ell \in [L]$: Multi-head attention, Layer norm, MLP (standard)
+- Token embedding: $\mathbf{W}_e \in \mathbb{R}^{D \times (P^2 \cdot C)}$
+- Position embedding: $\mathbf{W}_p \in \mathbb{R}^{D \times (N+1)}$ where $N = HW/P^2$
+- [CLS] token: $\mathbf{x}_{\text{class}} \in \mathbb{R}^D$
+- For each layer $\ell \in [L]$:
+  - Multi-head attention parameters: $\mathcal{W}^\ell$ (query, key, value, output)
+  - Layer norm: $\gamma^\ell_1, \beta^\ell_1, \gamma^\ell_2, \beta^\ell_2 \in \mathbb{R}^D$
+  - MLP: $\mathbf{W}^\ell_{\text{mlp1}} \in \mathbb{R}^{4D \times D}$, $\mathbf{b}^\ell_{\text{mlp1}} \in \mathbb{R}^{4D}$, $\mathbf{W}^\ell_{\text{mlp2}} \in \mathbb{R}^{D \times 4D}$, $\mathbf{b}^\ell_{\text{mlp2}} \in \mathbb{R}^D$
 - Classification head: $\mathbf{W}_{\text{head}} \in \mathbb{R}^{K \times D}$
 
 **Algorithm:**
 
 ```
-1. // ⚡ NEW: Patch extraction and embedding
+1. // Patch extraction and embedding
 2. Reshape x into patches: x_p ∈ R^(N × (P² · C))
 3. for t ∈ [N]:
 4.     e_t ← W_e · x_p[t, :]
-5. E ← [x_class; e_1; e_2; ...; e_N]
+5. E ← [x_class; e_1; e_2; ...; e_N]  // Prepend CLS token
 6. for t ∈ [N+1]:
-7.     E[:, t] ← E[:, t] + W_p[:, t]  // ⚡ NEW: 1D position embeddings
+7.     E[:, t] ← E[:, t] + W_p[:, t]  // Add position embeddings
 8.
-9. X ← E
+9. X ← E  // X ∈ R^(D × (N+1))
 10.
-11. // Standard Transformer encoder (unchanged from NLP)
+11. // Transformer encoder
 12. for ℓ = 1, 2, ..., L:
 13.     X' ← MHAttention(LayerNorm(X | γ¹_ℓ, β¹_ℓ) | W^ℓ, Mask ≡ 1) + X
 14.     X ← MLP(LayerNorm(X' | γ²_ℓ, β²_ℓ)) + X'
 15.
-16. // Classification (same as BERT)
-17. h ← LayerNorm(X[:, 0])
+16. // Classification
+17. h ← LayerNorm(X[:, 0])  // Extract CLS token
 18. return y = W_head · h
 ```
 
-**⚡ Lines 2-4, 7:** ViT's core innovation—everything else is standard Transformer
-**Lines 12-14:** Identical to NLP Transformers (Vaswani et al., 2017)
+### Algorithm 2: Multi-Head Attention Layer
 
-### Algorithm 2: Multi-Head Attention (Standard)
+**Input:** Token representations $\mathbf{X} \in \mathbb{R}^{D \times T}$
+**Output:** Updated representations $\tilde{\mathbf{X}} \in \mathbb{R}^{D \times T}$
+**Parameters:** For each head $h \in [H]$:
+- $\mathbf{W}^h_q, \mathbf{W}^h_k \in \mathbb{R}^{d_h \times D}$ where $d_h = D/H$
+- $\mathbf{W}^h_v \in \mathbb{R}^{d_h \times D}$
+- Output projection: $\mathbf{W}_o \in \mathbb{R}^{D \times D}$
+
+**Algorithm:**
 
 ```
-1. for h = 1, 2, ..., H:
-2.     Q_h ← W^h_q · X;  K_h ← W^h_k · X;  V_h ← W^h_v · X
-3.     A_h ← softmax((K_h^T · Q_h) / sqrt(d_h))
-4.     O_h ← V_h · A_h
-5. return W_o · [O_1; O_2; ...; O_H]
+1. for h = 1, 2, ..., H:  // Parallel computation
+2.     Q_h ← W^h_q · X
+3.     K_h ← W^h_k · X
+4.     V_h ← W^h_v · X
+5.     S_h ← (K_h^T · Q_h) / sqrt(d_h)  // Attention scores
+6.     A_h ← softmax(S_h)  // Attention weights
+7.     O_h ← V_h · A_h  // Weighted values
+8. O ← [O_1; O_2; ...; O_H]  // Concatenate heads
+9. return X̃ = W_o · O
 ```
 
-**Unchanged from Vaswani et al. (2017)**—ViT uses standard self-attention.
+### Algorithm 3: MLP Block
 
-### Algorithm 3: MLP Block (Standard)
+**Input:** $\mathbf{x} \in \mathbb{R}^D$
+**Output:** $\mathbf{y} \in \mathbb{R}^D$
+**Parameters:** $\mathbf{W}_1 \in \mathbb{R}^{4D \times D}$, $\mathbf{b}_1 \in \mathbb{R}^{4D}$, $\mathbf{W}_2 \in \mathbb{R}^{D \times 4D}$, $\mathbf{b}_2 \in \mathbb{R}^D$
+
+**Algorithm:**
 
 ```
 1. h ← GELU(W_1 · x + b_1)
 2. return y = W_2 · h + b_2
 ```
 
-**Unchanged from BERT**—Same feed-forward network with GELU activation.
+Where GELU(x) = x · Φ(x) and Φ is the standard Gaussian CDF.
 
 ### Model Variants
 
