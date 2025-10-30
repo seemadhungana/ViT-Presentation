@@ -162,11 +162,7 @@ Going from 16×16 to 8×8 patches = **16× more expensive** (4× more tokens →
 
 ---
 
-### Question 2: Why does ViT need so much data?
-
-### The Data Scaling Trade-off
-
-**Question:** When trained on ImageNet (1.3M images), why does ViT-Large underperform compared to ResNet of similar size? What changes when you use 300M images?
+### Question 2: When trained on ImageNet (1.3M images), why does ViT-Large underperform compared to ResNet of similar size? What changes when you use 300M images?
 
 <details>
 <summary><b>Hint:</b> Consider what CNNs have built-in that Transformers must learn from data</summary>
