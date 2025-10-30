@@ -103,7 +103,7 @@ With 300 million photos, learning your own strategy wins.
 
 </td>
 <td width="50%" align="center">
-  <img src="figure1.png" alt="Figure 1 from paper" width="250"/><br>
+  <img src="figure1.png" alt="Figure 1 from paper" width="300"/><br>
   <em>Figure 1:</em> ViT architecture overview
 </td>
 </tr>
@@ -193,13 +193,13 @@ Algorithm 1  ViT(x | Θ)
 Input:  Image x ∈ ℝ^{H×W×C}
 Param:  Θ = {E, E_pos, x_cls, {blockₗ}ₗ₌₁^L, W_head}
 
-1  Split x into P×P patches → X_p ∈ ℝ^{(P²C)×N}      // Patchify
-2  Z₀ ← [x_cls , Eᵀ·X_p] + E_pos                     // Linear projection + CLS + learned pos emb
+1  Split x into P×P patches → X_p ∈ ℝ^{N×(P²C)}      // N = HW/P² patches
+2  Z₀ ← [x_cls; X_p·E] + E_pos                       // Linear proj + CLS + pos emb
 3  For ℓ = 1..L:
-4      Zₗ ← Zₗ₋₁ + MSA(LN(Zₗ₋₁))                     // Global (non-causal) self-attn
-5      Zₗ ← Zₗ + MLP(LN(Zₗ)) with GELU activation     // Pre-LN + GELU MLP
-6  y ← LN(Z_L[:,1])                                  // CLS token output
-7  Return logits ← W_head·y                          // Linear or MLP head
+4      Z'ₗ ← Zₗ₋₁ + MSA(LN(Zₗ₋₁))                    // Self-attention sublayer
+5      Zₗ ← Z'ₗ + MLP(LN(Z'ₗ))                        // MLP sublayer (GELU)
+6  y ← LN(z⁰_L)                                       // Extract CLS token
+7  Return W_head·y                                    // Classification logits
 ```
 
 ---
@@ -264,6 +264,9 @@ Despite using 1D position embeddings, the model learns 2D spatial relationships:
 - Row/column structure emerges naturally
 - Distance encoding: patches at similar distances show similar patterns
 
+![Figure 7](figure7.png)
+**Figure 7:** Learned RGB embedding filters. (Center) Position embedding similarity reveals 2D spatial structure. (Right) Attention distance grows with depth from local to global.
+
 **2. Attention Distance Increases with Depth**
 
 Lower layers (1-6):
@@ -293,23 +296,23 @@ Attention from [CLS] token to image patches shows:
 
 ### Strengths
 
-1. **Paradigm shift with simplicity:** Proved CNNs aren't necessary for vision using minimal modifications to standard Transformers
+1. **Paradigm shift**: Proved CNNs unnecessary for vision using standard Transformers with minimal modifications
 
-2. **Rigorous scaling analysis:** Systematic evaluation across 3 dataset sizes, 3 model scales, fair compute comparisons
+2. **Rigorous scaling**: Systematic evaluation across 3 dataset sizes, 3 model scales, fair compute comparisons
 
-3. **Strong transfer learning:** VTAB results show ViT transfers well across diverse domains (natural, specialized, structured tasks)
+3. **Strong transfer** : Excels across diverse domains (natural, specialized, structured tasks) on VTAB benchmark
 
-4. **Computational efficiency:** 2-4× better performance/compute trade-off than CNNs at scale
+4. **Compute efficient**: 2-4× better performance/compute trade-off than CNNs at scale
 
 ### Limitations
 
-1. **Limited to classification:** Paper focuses on image classification; doesn't explore detection, segmentation, or dense prediction tasks
+1. **Classification only**: Doesn't explore detection, segmentation, or dense prediction tasks
 
-2. **Self-supervision underexplored:** Preliminary masked patch prediction experiments show promise but weren't fully developed
+2. **Requires massive data**: Underperforms CNNs below ~14M images; needs large-scale pre-training
 
-3. **Proprietary dataset dependency:** Best results require JFT-300M (not publicly available); limits reproducibility
+3. **Proprietary data dependency**: Best results need JFT-300M (not public); limits reproducibility
 
-4. **Small data performance:** Significantly underperforms CNNs on ImageNet-1k scale; requires ~14M+ images for competitive results
+4. **Self-supervision underexplored**: Preliminary experiments showed promise but weren't fully developed
 
 ### Impact (2021-2025)
 
@@ -327,33 +330,13 @@ Attention from [CLS] token to image patches shows:
 
 ---
 
-
-## Summary: Three Key Takeaways
-
-1. **Pure attention works for vision** — No convolutions needed when you have enough data
-
-2. **Scale > Inductive bias** — With ~14M+ images, learning biases from data beats hand-coding them
-
-3. **Unified architectures** — Same Transformer for text, images, video enables multi-modal AI
-
 **Vision Transformer proved that general-purpose architectures, when scaled appropriately, can match or exceed specialized domain-specific designs—fundamentally changing computer vision research.**
-## Code Demonstration
 
 ---
 
 ### Interactive Demo: ViT with Pre-trained Model
 
 See [vit_demo.py](vit_demo.py) for a complete demonstration using a pre-trained Vision Transformer model.
-
-**To run the demo:**
-
-```bash
-# Install dependencies
-pip install torch torchvision pillow requests
-
-# Run the demo
-python vit_demo.py
-```
 
 **What the demo shows:**
 
