@@ -310,8 +310,6 @@ Attention from [CLS] token to image patches shows:
 
 3. **Strong transfer** : Excels across diverse domains (natural, specialized, structured tasks) on VTAB benchmark
 
-4. **Compute efficient**: 2-4× better performance/compute trade-off than CNNs at scale
-
 ### Limitations
 
 1. **Classification only**: Doesn't explore detection, segmentation, or dense prediction tasks
@@ -319,8 +317,6 @@ Attention from [CLS] token to image patches shows:
 2. **Requires massive data**: Underperforms CNNs below ~14M images; needs large-scale pre-training
 
 3. **Proprietary data dependency**: Best results need JFT-300M (not public); limits reproducibility
-
-4. **Self-supervision underexplored**: Preliminary experiments showed promise but weren't fully developed
 
 ### Impact (2021-2025)
 
