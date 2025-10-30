@@ -336,7 +336,7 @@ Attention from [CLS] token to image patches shows:
 
 ### Interactive Demo: ViT with Pre-trained Model
 
-See [vit_demo.py](vit_demo.py) for a complete demonstration using a pre-trained Vision Transformer model.
+See [vit_demo.ipynb](vit_demo.ipynb) for a complete demonstration using a pre-trained Vision Transformer model.
 
 **What the demo shows:**
 
