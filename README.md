@@ -20,17 +20,74 @@
 
 ### The Central Problem
 
-For decades, **convolutional neural networks (CNNs)** dominated computer vision. Every breakthrough—AlexNet (2012), VGG, ResNet, EfficientNet—built upon convolution with strong **inductive biases**:
+For decades, **convolutional neural networks (CNNs)** dominated computer vision. Every breakthrough—AlexNet (2012), VGG, ResNet, EfficientNet—built upon convolution with strong **inductive biases**.
 
-- **Translation equivariance:** Moving an object shifts its representation similarly
-- **Locality:** Nearby pixels are more related than distant ones
-- **Hierarchical structure:** Low-level edges → mid-level patterns → high-level objects
+#### What is a Convolution?
 
-Meanwhile, **Transformers** revolutionized NLP through pure self-attention, scaling to 100B+ parameters with massive pre-training (BERT, GPT).
+Think of a **convolution** as a small magnifying glass (say, 3×3 pixels) that slides across an entire image, looking for specific patterns. 
 
-**Can we apply a standard Transformer directly to images with minimal modifications and could pure attention (without convolutions) match or exceed CNNs?** 
+- Place the magnifying glass on the top-left corner
+- Examine those 9 pixels: "Do I see an edge here? A corner? A texture?"
+- Slide the magnifying glass one pixel to the right
+- Repeat across the entire image
+
+That sliding magnifying glass is a **convolutional filter**. Early filters detect simple patterns (edges, textures), later filters detect complex objects (faces, cars). This hierarchy is **built into the architecture**—that's what makes it a strong inductive bias.
+
+#### The Three Built-in Assumptions (Inductive Biases)
+
+CNNs come with a "strategy book" for understanding images—assumptions baked into their design:
+
+**1. Locality: "Nearby pixels are friends"**
+- A dog's eye pixels stick together; they're unrelated to distant tree pixels
+- The 3×3 magnifying glass only looks at neighbors
+- To see far away, you need many layers stacked (building a larger "receptive field")
+
+**2. Translation Equivariance: "A cat is a cat, anywhere"**
+- The same cat detector works whether the cat is top-left or bottom-right
+- The magnifying glass uses the **same weights** as it slides across the whole image
+- Efficient: no need for separate detectors for each position
+
+**3. Hierarchical Structure: "Simple → Complex"**
+- Layer 1: Sees 3×3 → detects edges
+- Layer 5: Sees 50×50 → combines edges into shapes
+- Layer 10: Sees 200×200 → combines shapes into objects (dog, car)
+- This pyramid is **forced by design**
+
+#### The Analogy: Two Ways to Learn
+
+Imagine teaching someone to recognize dogs:
+
+**CNN approach (High Inductive Bias):**
+"Here's your strategy book:
+- Chapter 1: First, look for furry textures
+- Chapter 2: Then, look for four legs and a tail  
+- Chapter 3: Finally, combine those into 'dog'
+
+You'll learn faster, but you must follow this hierarchy."
+
+**ViT approach (Low Inductive Bias):**
+"Here's a pile of 300 million photos of dogs. Figure out your own strategy."
+
+With 1,000 photos, the strategy book wins.  
+With 300 million photos, learning your own strategy wins.
+
+#### Meanwhile, in NLP...
+
+**Transformers** revolutionized natural language processing through pure self-attention:
+- No built-in assumptions about word order or grammar
+- Scaled to 100B+ parameters (BERT, GPT)
+- Learned language patterns from massive pre-training data
+
+#### The Central Question
+
+**Can we apply a standard Transformer directly to images with minimal modifications?**  
+**Could pure attention (without convolutions) match or exceed CNNs?**
 
 ### The Approach
+
+<table>
+<tr>
+<td>
 
 **ViT's elegant solution:**
 
@@ -42,12 +99,16 @@ Meanwhile, **Transformers** revolutionized NLP through pure self-attention, scal
 6. Process with standard Transformer encoder
 7. Classify using [CLS] token output
 
-**Example:** 224×224 image → 196 patches (14×14 grid) + 1 [CLS] = 197 tokens
-
 **That's it.** No convolutions. No complex architectural innovations. Just patches + attention.
 
-![Figure 1 from paper](figure1.png)
-**Figure 1:** The complete ViT architecture showing how an image is split into patches, linearly embedded, processed by a standard Transformer encoder, and classified using the [CLS] token.
+</td>
+<td width="50%" align="center">
+  <img src="figure1.png" alt="Figure 1 from paper" width="250"/><br>
+  <em>Figure 1:</em> ViT architecture overview
+</td>
+</tr>
+</table>
+
 
 ### Key Finding: Scale Trumps Inductive Bias
 
@@ -73,7 +134,7 @@ Meanwhile, **Transformers** revolutionized NLP through pure self-attention, scal
 **Question:** A 224×224 RGB image goes into ViT with patch size 16×16. How many tokens does the Transformer process, and what does each token represent?
 
 <details>
-<summary><b>💡 Hint:</b> Divide the image grid by the patch size to get the # of patch tokens!</summary>
+<summary><b>Hint:</b> Divide the image grid by the patch size to get the # of patch tokens!</summary>
 
 **Answer:**
 
@@ -83,22 +144,7 @@ The Transformer processes **197 tokens total**:
 
 Each patch token represents a 16×16 pixel region of the image (256 pixels per patch).
 
-**Step-by-step transformation:**
-```
-224×224×3 image
-  ↓ Split into 16×16 patches
-196 patches, each 16×16×3 = 768 dimensions
-  ↓ Linear projection to embedding dimension D
-196 patch embeddings of dimension D
-  ↓ Add position embeddings + prepend [CLS]
-197 tokens × D dimensions
-  ↓ Transformer encoder (12 layers for ViT-Base)
-197 output representations
-  ↓ Take [CLS] token output
-Classification (D → 1000 classes for ImageNet)
-```
-
-**Key insight:** An image becomes a "sentence" where each "word" is a 16×16 pixel patch.
+**An image becomes a "sentence" where each "word" is a 16×16 pixel patch.**
 
 </details>
 
@@ -111,14 +157,7 @@ Classification (D → 1000 classes for ImageNet)
 **Question:** When trained on ImageNet (1.3M images), why does ViT-Large underperform compared to ResNet of similar size? What changes when you use 300M images?
 
 <details>
-<summary><b>💡 Hint:</b> Consider what CNNs have built-in that Transformers must learn from data</summary>
-
-**Answer:**
-**The Data Scaling Trade-off**
-
-**Question:** Why does ViT-Large lose to ResNet on ImageNet (1.3M images) but win with 300M images?
-
-💡 **Hint:** What does CNN know that ViT must learn?
+<summary><b>Hint:</b> Consider what CNNs have built-in that Transformers must learn from data</summary>
 
 ---
 
@@ -288,7 +327,19 @@ Attention from [CLS] token to image patches shows:
 
 ---
 
+
+## Summary: Three Key Takeaways
+
+1. **Pure attention works for vision** — No convolutions needed when you have enough data
+
+2. **Scale > Inductive bias** — With ~14M+ images, learning biases from data beats hand-coding them
+
+3. **Unified architectures** — Same Transformer for text, images, video enables multi-modal AI
+
+**Vision Transformer proved that general-purpose architectures, when scaled appropriately, can match or exceed specialized domain-specific designs—fundamentally changing computer vision research.**
 ## Code Demonstration
+
+---
 
 ### Interactive Demo: ViT with Pre-trained Model
 
@@ -379,18 +430,6 @@ Top 5 Predictions:
    - [MAE: Masked Autoencoders](https://arxiv.org/abs/2111.06377)
    - [CLIP: Vision-Language](https://arxiv.org/abs/2103.00020)
    - [Swin Transformer](https://arxiv.org/abs/2103.14030)
-
----
-
-## Summary: Three Key Takeaways
-
-1. **Pure attention works for vision** — No convolutions needed when you have enough data
-
-2. **Scale > Inductive bias** — With ~14M+ images, learning biases from data beats hand-coding them
-
-3. **Unified architectures** — Same Transformer for text, images, video enables multi-modal AI
-
-**Vision Transformer proved that general-purpose architectures, when scaled appropriately, can match or exceed specialized domain-specific designs—fundamentally changing computer vision research.**
 
 ---
 
