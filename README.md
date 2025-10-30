@@ -149,11 +149,11 @@ Going from 16×16 to 8×8 patches = **16× more expensive** (4× more tokens →
 
 **Critical experiments across dataset sizes:**
 
-| Dataset Size | Winner | Accuracy | Why |
-|-------------|--------|----------|-----|
-| ImageNet (1.3M) | ResNet | Higher | CNN inductive bias helps with limited data |
-| ImageNet-21k (14M) | ~Tied | Similar | Crossover point |
-| JFT-300M (300M) | **ViT** | **88.55%** | Enough data to learn biases from scratch |
+| Dataset Size | Winner | Accuracy |
+|-------------|--------|----------|
+| ImageNet (1.3M) | ResNet | Higher |
+| ImageNet-21k (14M) | ~Tied | Similar |
+| JFT-300M (300M) | **ViT** | **88.55%** |
 
 **The paradigm shift:** With sufficient data, general-purpose architectures (Transformers) can match or exceed specialized architectures (CNNs) while using **2-4× less pre-training compute**.
 
