@@ -109,6 +109,41 @@ With 300 million photos, learning your own strategy wins.
 </tr>
 </table>
 
+---
+## Understanding the Core Transformation
+### Question 1: ViT processes images as sequences of patches. Why not just process each pixel as a token?
+
+<details>
+<summary><b>Hint:</b> Think about how attention scales with sequence length!</summary>
+
+**Answer:**
+
+**Processing individual pixels would be impossible:**
+- 224×224 = 50,176 tokens
+- Self-attention has O(N²) complexity
+- 50,176² = 2.5 billion attention computations per layer!
+- Would require massive memory and be extremely slow
+
+**Patch size directly controls cost:**
+
+| Patch Size | # Patches | Attention Cost |
+|------------|-----------|----------------|
+| 32×32 | 49 | 49² = 2,401 |
+| 16×16 | 196 | 196² = 38,416 |
+| 8×8 | 784 | 784² = 614,656 |
+
+Going from 16×16 to 8×8 patches = **16× more expensive** (4× more tokens → 16× attention cost)
+
+**The trade-off:**
+- **Larger patches (16×16, 32×32):** Fast but loses fine details
+- **Smaller patches (8×8, 4×4):** Captures details but very expensive
+- **ViT-L/16 sweet spot:** 196 patches balances quality and efficiency
+
+**Key insight:** Patches are a pragmatic compression strategy. ViT would work better with pixels, but it's computationally infeasible!
+
+</details>
+
+---
 
 ### Key Finding: Scale Trumps Inductive Bias
 
@@ -127,30 +162,7 @@ With 300 million photos, learning your own strategy wins.
 
 ---
 
-## Question 1: How does ViT process an image?
-
-### Understanding the Core Transformation
-
-**Question:** A 224×224 RGB image goes into ViT with patch size 16×16. How many tokens does the Transformer process, and what does each token represent?
-
-<details>
-<summary><b>Hint:</b> Divide the image grid by the patch size to get the # of patch tokens!</summary>
-
-**Answer:**
-
-The Transformer processes **197 tokens total**:
-- **196 patch tokens:** (224÷16) × (224÷16) = 14 × 14 = 196 image patches
-- **1 [CLS] token:** A learnable classification token prepended to the sequence
-
-Each patch token represents a 16×16 pixel region of the image (256 pixels per patch).
-
-**An image becomes a "sentence" where each "word" is a 16×16 pixel patch.**
-
-</details>
-
----
-
-## Question 2: Why does ViT need so much data?
+### Question 2: Why does ViT need so much data?
 
 ### The Data Scaling Trade-off
 
